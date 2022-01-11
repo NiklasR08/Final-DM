@@ -3,15 +3,124 @@ title: "Final Group Project Data Mining"
 knit: (function(input_file, encoding) {
   out_dir <- 'docs';
   rmarkdown::render(input_file,
- encoding=encoding,
- output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
 author: "Adriana Barlafante, Guglielmo Bonifazi, Niklas Rengelshausen"
 date: "1/11/2022"
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Final Data Minig Project
+# World Happiness Report
+
+**Task:** The aim is to study the characteristics of society described
+in the data sets: what factors affect well-being and how do they relate
+to each other? The two bases provided should be combined.
+
+## Introduction
+
+For our analysis of the data set we divided our work into multiple
+steps. To have an overview of our steps please have a look at the Index.
+The data analysis is made with two data set which we later combined
+after having a first look at both data sets and the kaggle page to
+better understand the data.
+
+**Origin of the data:** World Happiness (WH):
+<https://www.kaggle.com/unsdsn/world-happiness> Human Freedom Index
+(HFI): <https://www.kaggle.com/gsutters/the-human-freedom-index>
+
+In addition we had a look at the used the [following
+book](https://www.cato.org/sites/cato.org/files/2021-01/human-freedom-index-2016.pdf)
+to better understand the data set of the Human Freedom Index. The data
+set contains over 120 different variables and to understand these
+variables the book helped with some descriptions (see p. 185 ff.)
+
+# Index
+
+-- 1. Filtering of the Data Set and Imputation of Values 
+-- 2. Descriptive Statistics 
+-- 3. Principal Component Analysis (PCA) 
+-- 4. Cluster Analysis 
+-- 5. Multidimensional Scaling 
+-- 6. Perceptual Maps 
+-- 7. Possible Extension (NEW HEADLINE NEEDED)
+
+```{r include=FALSE, warning=FALSE}
+## PLEASE LOAD LIBRARY HERE AND RERUN CODE CHUNK
+library(data.table)
+library(tidyverse)
+```
+
+## 1. Filtering of the Data Set and Imputation of Values
+
+### 1.1 Loading Data Sets and First Look
+
+```{r}
+wh = read.csv("2016.csv")         # World Happiness
+hfi = read.csv("hfi_cc_2018.csv") # Human Freedom Index
+```
+
+**World Happiness:**
+
+```{r include=TRUE, echo=FALSE}
+wh
+```
+
+This data set contains information regarding the happiness of different
+countries. Next to an index score which ranks each country the data set
+also has a score happiness score on which the happiness rank is based.
+Additionally the data set contains columns such as GDP or Health Life
+Expectancy. All the observations are from 2016. For a further insights
+please have a look at the descriptive statistics.
+
+**Human Freedom Index:**
+
+```{r}
+hfi
+```
+For the second data set we cans see that it contains 1458 observations and 123 variables. The data set contains a 
+huge number of variables. Nonetheless, they are organized hierarchically so we do not need them all. As previously
+stated, the data set deals with the human freedom index. 
+
+This variable has been computed considering two factors:personal freedom and economic freedom. 
+We can observe that human freedom (hf) is the simple average of economic freedom (ec) and personal freedom (pf).
+
+```{r}
+all.equal(hfi$hf_score, (hfi$ef_score + hfi$pf_score)/2)
+```
+
+More in detail, economic freedom and personal freedom have been computed using other factors.
+```{r}
+#Indexes of variables used to compute economic freedom
+ec=c(70,81,86,99,118)
+colnames(hfi)[ec]
+```
+
+```{r}
+#Indexes of variables used to compute personal freedom
+pf=c(8,22,26,32,44,52,61)
+colnames(hfi)[pf]
+```
+
+Moreover, even those variables have been computed using other factors.
+For instance we can observe pf_rol's composition as the following:
+```{r}
+colnames(hfi[5:8])
+```
+
+
+## 2. Descriptive Statistics (Niklas)
+
+## 3. Principal Component Analysis (PCA) (Adriana)
+
+## 4. Cluster Analysis (Niklas)
+
+## 5. Multidimensional Scaling (Adriana)
+
+## 6. Perceptual Maps (Guglielmo)
+
+## 7. Possible Extension (Guglielmo) (NEW HEADLINE NEEDED)
