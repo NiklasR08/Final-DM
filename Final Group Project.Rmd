@@ -1,5 +1,10 @@
 ---
 title: "Final Group Project Data Mining"
+knit: (function(input_file, encoding) {
+  out_dir <- 'docs';
+  rmarkdown::render(input_file,
+ encoding=encoding,
+ output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
 author: "Adriana Barlafante, Guglielmo Bonifazi, Niklas Rengelshausen"
 date: "1/11/2022"
 output: html_document
@@ -9,4 +14,4 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Final DM Project
+# Final Data Minig Project
