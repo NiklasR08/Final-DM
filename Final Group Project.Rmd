@@ -1,0 +1,12 @@
+---
+title: "Final Group Project Data Mining"
+author: "Adriana Barlafante, Guglielmo Bonifazi, Niklas Rengelshausen"
+date: "1/11/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Final DM Project
