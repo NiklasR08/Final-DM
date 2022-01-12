@@ -3,12 +3,14 @@ title: "Final Group Project Data Mining"
 knit: (function(input_file, encoding) {
   out_dir <- 'docs';
   rmarkdown::render(input_file,
+ encoding=encoding,
+ output_file=file.path(dirname(input_file), out_dir, 'index.html'))}
 author: "Adriana Barlafante, Guglielmo Bonifazi, Niklas Rengelshausen"
 date: "1/11/2022"
 output: html_document
 editor_options: 
   markdown: 
-    wrap: 72
+    wrap: 100
 ---
 
 ```{r setup, include=FALSE}
@@ -17,42 +19,47 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # World Happiness Report
 
-**Task:** The aim is to study the characteristics of society described
-in the data sets: what factors affect well-being and how do they relate
-to each other? The two bases provided should be combined.
+**Task:** The aim is to study the characteristics of society described in the data sets: what
+factors affect well-being and how do they relate to each other? The two bases provided should be
+combined.
 
 ## Introduction
 
-For our analysis of the data set we divided our work into multiple
-steps. To have an overview of our steps please have a look at the Index.
-The data analysis is made with two data set which we later combined
-after having a first look at both data sets and the kaggle page to
-better understand the data.
+For our analysis of the data set we divided our work into multiple steps. To have an overview of our
+steps please have a look at the Index. The data analysis is made with two data set which we later
+combined after having a first look at both data sets and the kaggle page to better understand the
+data.
 
-**Origin of the data:** World Happiness (WH):
-<https://www.kaggle.com/unsdsn/world-happiness> Human Freedom Index
-(HFI): <https://www.kaggle.com/gsutters/the-human-freedom-index>
+**Origin of the data:** World Happiness (WH): <https://www.kaggle.com/unsdsn/world-happiness> Human
+Freedom Index (HFI): <https://www.kaggle.com/gsutters/the-human-freedom-index>
 
 In addition we had a look at the used the [following
-book](https://www.cato.org/sites/cato.org/files/2021-01/human-freedom-index-2016.pdf)
-to better understand the data set of the Human Freedom Index. The data
-set contains over 120 different variables and to understand these
-variables the book helped with some descriptions (see p. 185 ff.)
+book](https://www.cato.org/sites/cato.org/files/2021-01/human-freedom-index-2016.pdf) to better
+understand the data set of the Human Freedom Index. The data set contains over 120 different
+variables and to understand these variables the book helped with some descriptions (see p. 185 ff.)
 
 # Index
 
--- 1. Filtering of the Data Set and Imputation of Values 
--- 2. Descriptive Statistics 
--- 3. Principal Component Analysis (PCA) 
--- 4. Cluster Analysis 
--- 5. Multidimensional Scaling 
--- 6. Perceptual Maps 
+-- 1. Filtering of the Data Set and Imputation of Values
+
+-- 2. Descriptive Statistics
+
+-- 3. Principal Component Analysis (PCA)
+
+-- 4. Cluster Analysis
+
+-- 5. Multidimensional Scaling
+
+-- 6. Perceptual Maps
+
 -- 7. Possible Extension (NEW HEADLINE NEEDED)
 
 ```{r include=FALSE, warning=FALSE}
 ## PLEASE LOAD LIBRARY HERE AND RERUN CODE CHUNK
 library(data.table)
 library(tidyverse)
+library(VIM)
+library(mice)
 ```
 
 ## 1. Filtering of the Data Set and Imputation of Values
@@ -70,30 +77,32 @@ hfi = read.csv("hfi_cc_2018.csv") # Human Freedom Index
 wh
 ```
 
-This data set contains information regarding the happiness of different
-countries. Next to an index score which ranks each country the data set
-also has a score happiness score on which the happiness rank is based.
-Additionally the data set contains columns such as GDP or Health Life
-Expectancy. All the observations are from 2016. For a further insights
-please have a look at the descriptive statistics.
+This data set contains information regarding the happiness of different countries. Next to an index
+score which ranks each country the data set also has a score happiness score on which the happiness
+rank is based. Additionally the data set contains columns such as GDP or Health Life Expectancy. All
+the observations are from 2016. For a further insights please have a look at the descriptive
+statistics.
 
 **Human Freedom Index:**
 
 ```{r}
 hfi
 ```
-For the second data set we cans see that it contains 1458 observations and 123 variables. The data set contains a 
-huge number of variables. Nonetheless, they are organized hierarchically so we do not need them all. As previously
-stated, the data set deals with the human freedom index. 
 
-This variable has been computed considering two factors:personal freedom and economic freedom. 
-We can observe that human freedom (hf) is the simple average of economic freedom (ec) and personal freedom (pf).
+For the second data set we cans see that it contains 1458 observations and 123 variables. The data
+set contains a huge number of variables. Nonetheless, they are organized hierarchically so we do not
+need them all. As previously stated, the data set deals with the human freedom index.
+
+This variable has been computed considering two factors:personal freedom and economic freedom. We
+can observe that human freedom (hf) is the simple average of economic freedom (ec) and personal
+freedom (pf).
 
 ```{r}
 all.equal(hfi$hf_score, (hfi$ef_score + hfi$pf_score)/2)
 ```
 
 More in detail, economic freedom and personal freedom have been computed using other factors.
+
 ```{r}
 #Indexes of variables used to compute economic freedom
 ec=c(70,81,86,99,118)
@@ -106,12 +115,107 @@ pf=c(8,22,26,32,44,52,61)
 colnames(hfi)[pf]
 ```
 
-Moreover, even those variables have been computed using other factors.
-For instance we can observe pf_rol's composition as the following:
+Moreover, even those variables have been computed using other factors. For instance we can observe
+the composition of pf_rol as the following:
+
 ```{r}
 colnames(hfi[5:8])
 ```
+This means that pf_rol is calculated by using pf_rol_procedural, pf_rol_civil and pf_rol_criminal. The same holds for other variables as well.
+Going deeper we can see that some of those variables can be further decomposed:
+```{r}
+colnames(hfi)[9:22]
+```
+For instance we can observe that pf_ss can be derived from pf_ss_homicide, disappearances and women. But both disappearances and women can be further divided as you can see.
 
+From this quick analysis is clear that a lot of information is redundant or extremely specific so that we can drop some of the variables we do not need for our analysis.
+
+```{r}
+reduced_hfi <- hfi[, c(3, 2, 1, 4, pf, ec, 62, 63, 119, 120, 121, 122, 123)]
+dim(reduced_hfi)
+```
+Column 5-11:    Variables that compute pf
+Column 12-13:   pf_score and pf_rank
+Column 14-18:   Variables that compute ef
+Column 19-10:   ef_score and ef_rank
+Column 21-23:   hf_score, rank and quartile
+
+We were able to reduce the data set from over 120 different variables to a total of 23 variables that we can use for our analysis. Note that this data set still contains data from different years beside 2016.
+```{r}
+reduced_hfi16 = reduced_hfi[reduced_hfi$year == 2016, ]
+dim(reduced_hfi16)
+```
+If we reduce the data set to data from 2016 only we can see that we only have 162 observations compared to 1458 in total if we consider all years. This first reduction of the data set will help us with our analysis by removing redundant information.
+
+### 1.2 Imputation of missing Values
+During our first analysis we noticed that the Human Freedom Index data set is missing some values and the World Happiness index is not missing any values. To have a better analysis we therefore decided to complete the missing information of the data set.
+
+**First Look at Variables:**
+```{r}
+summary(reduced_hfi16)
+missing_hfi <- reduced_hfi16[,5:16]
+```
+From this first look we can see that there are some values missing for the variables that compute personal freedom and economical freedom. We will now use some descriptive plots to better understand how much data is missing.
+
+**Descriptive statistics with missing values:**
+```{r}
+aggr(missing_hfi, 
+     numbers = T, #to display the numbers on top of the bars
+     prop = c(T, F) # prop is a logical indicating whether the proportion of 
+     )              # missing values and combinations should be used rather than the total amount
+```
+The plot shows on the one hand how often a variable is missing and on the other hand in which combinations. We can see that for pf_religion less than one percent of the values is missing and for pf_association more than 15% of the values are missing.
+Additionally we can see on the second plot that only in one case is pf_religion and pf_association missing, in 25 cases only pf_association is missing and in most of the cases (136) no variable is missing!
+
+**Imputation of Missing Variables:**
+For the imputation of the missing values we will use the mice data set under the following assumptions:
+We assume that the missing data are missing at random (MAR) which means that the probability that a value is missing depends only on the observed values and can be predicted using them. It imputes data on a variable by variable basis by specifying an imputation model per variable.
+
+We will use the predictive mean matching method (pmm) because the missing data of our data set contains purely numeric variables.
+
+```{r echo=FALSE}
+imputed_hfi16 <- mice(reduced_hfi16, m = 5, maxit = 50, seed = 500)
+summary(imputed_hfi16)
+```
+```{r}
+complete_hfi <- complete(imputed_hfi16, 1)
+summary(complete_hfi)
+```
+The data set now has no more missing values. Remember that for pf_association more than 15% of the values were missing in the before imputing them. To see if there is a big difference between the two models we will now compare the distribution of values between the values of pf_association with imputed values and without imputed values.
+
+```{r}
+par(mfrow = c(2, 2))
+boxplot(missing_hfi$pf_association, main = "Without Imputed Values", ylim = c(0, 12))
+boxplot(complete_hfi$pf_association ,main = "With Imputed Values", ylim = c(0, 12))
+hist(missing_hfi$pf_association, main = "Without Imputed Values", xlab = "Score pf_association")
+hist(complete_hfi$pf_association ,main = "With Imputed Values",  xlab = "Score pf_association")
+par(mfrow = c(1,1))
+```
+The boxplot's look almost the same for both data sets and we can also see that in the distribution not much changed. The histogram "With Imputed Values" might look a different than the other one but that is due to the fact that it contains more values (values that were missing before). Form the boxplot we can see that the median and quantiles are about the same. So for our further analysis we can use the complete data set.
+We could also have a look at the distribution of pf_religion because we had one missing value there, but given that it is only one value we will probably not see a lot of change between the two data sets.
+
+**1.3 Merging of the Two Data Sets**
+We will now merge the two data sets into one data set with which we can work.
+```{r}
+#declare as data table
+wh <- data.table(wh)
+complete_hfi <- data.table(complete_hfi)
+
+# renaming of column to merge both data sets
+colnames(wh)[1] = "countries" 
+
+#merge data sets to one
+dt <- merge(wh, complete_hfi, by = "countries")
+
+#convert to data table
+dt <- data.table(dt)
+View(dt)
+dim(dt)
+```
+
+
+**1.4 Summary:**
+In the first step of our analysis we were able to understand the two data sets and do some filtering. This included exploring the variables of the data sets and removing redundant information that we will not need for our further analysis. We saw that some of the variables were missing values. We analyzed the missing values and imputed them with the help of a predictive mean matching method using the mice package. Finally, we merged both data sets into one data set for the further data analysis. The analysis will now continue with some descriptive statistics of the data sets.
 
 ## 2. Descriptive Statistics (Niklas)
 
