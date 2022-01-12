@@ -255,7 +255,7 @@ As you can see the majority of our countries come from Africa (48 total), Europe
 As stated earlier, happiness score is important to us because it reflects the well being of a country.
 
 ```{r}
-ggplot(dt_ds, aes(Happiness.Score)) + geom_histogram(binwidth = 0.2)
+hist(dt_ds$Happiness.Score, main = "Histogram Happiness Score", xlim = c(1, 10), xlab = "Happiness Score")
 ```
 ```{r}
 summary(dt_ds$Happiness.Score)
@@ -284,31 +284,19 @@ If we look at the scale of the histograms we can see that GDP per Capita, Family
 **Personal Freedom, Economic Freedom and Human Freedom**
 ```{r}
 par(mfrow = c(1, 3))
-hist(dt_ds$pf_score, main = "Personal Freedom", xlab = "Score of Personal Freedom", xlim = c(1,10))
-hist(dt_ds$ef_score, main = "Economic Freedom", xlab = "Score of Economic Freedom", xlim = c(1,10))
-hist(dt_ds$hf_score, main = "Human Freedom", xlab = "Score of Human Freedom", xlim = c(1,10))
+hist(dt_ds$pf_score, main = "Personal Freedom", xlab = "Score of Personal Freedom", xlim = c(1,10), ylim = c(0, 35))
+hist(dt_ds$ef_score, main = "Economic Freedom", xlab = "Score of Economic Freedom", xlim = c(1,10), ylim = c(0, 35))
+hist(dt_ds$hf_score, main = "Human Freedom", xlab = "Score of Human Freedom", xlim = c(1,10), ylim = c(0, 35))
 
 par(mfrow = c(1, 1))
 ```
 ```{r}
 summary(dt_ds[,11:13])
 ```
-The distribution of all three graphs is left-skewed. Based on the median we see no big difference between the economic freedom and personal freedom. By looking at the graphs on the other side we can see that personal freedom is more distributed between the maximum and minimum score compared to economic freedom which appears to be more centered around their median.
-Remember that the human freedom score is the average on the pf_score and ef_score which we can see here (average pf_score + average ef_score = average hf_score).
+The distribution of all three graphs is left-skewed. Based on the median we see no big difference between the economic freedom and personal freedom. The distribution on the other hand is slightly different for the two.
+The human freedom score is the average on the pf_score and ef_score which we can see here (average pf_score + average ef_score = average hf_score).
 
-**Economic Freedom**
-```{r}
-summary(dt_ds$ef_score)
-```
-
-
-**Human Freedom**
-```{r}
-summary(dt_ds$hf_score)
-```
-
-
-
+### 2.3 Bi- and Multivariate Analysis
 
 
 ## 3. Principal Component Analysis (PCA) (Adriana)
