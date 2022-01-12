@@ -261,9 +261,21 @@ further data analysis. The analysis will now continue with some descriptive stat
 sets.
 
 ## 2. Descriptive Statistics (Niklas)
+
+### 2.1 Data Preparation
+
+For the descriptive analysis of the data we will focus just on a part of the data and reduce the data set to the most important data points. 
+From the first data set (World Happiness) we will focus on the following variables: countries, Region, Happiness.Score, Economy..GDP.per.Capita., Family, Health..Life.Expectancy., Freedom, Trust..Government.Corruption., Generosity. The Happiness.Score in the end is the closest score that tells us about the well being of individuals in a country. Additionally, the last six of these scores have the potential to deliver some explanation why the Happiness.Score is high or low.
+From the second data set (Human Freedom Index) we will focus on the following three variables: pf_score, ef_score and hf_score. The reason for that is that these variables are already a calculation of the other variables given in our data set. That way we reduce the number ob variables and do not use redundant information.
+```{r}
+colnames(dt_ds)
+```
+
 ```{r}
 #dropping information that is not needed
-dt_ds <- subset(dt, select = -c(ISO_code, year, region))
+dt_ds <- dt[, c(1,2,4,7,8,9,10,11,12,29,31,33)]
+dt_ds$Region = as.factor(dt_ds$Region)
+summary(dt_ds)
 ```
 
 
