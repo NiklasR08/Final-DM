@@ -209,7 +209,7 @@ dt <- merge(wh, complete_hfi, by = "countries")
 
 #convert to data table
 dt <- data.table(dt)
-View(dt)
+View(dt) 
 dim(dt)
 
 ```
@@ -482,6 +482,36 @@ From this analysis we have two takeaways:
 
 
 ## 4. Cluster Analysis (Niklas)
+```{r include=FALSE}
+library()
+```
+
+During our descriptive analysis we saw some patterns in our data. In the following analysis we will deepen that analysis with a cluster analysis.
+
+### 4.1 Data Preparation
+```{r}
+clus_dt <- dt[, -c(1,2,3,5,6,13,14,15,16,29,30,32,31,33,34,35)]
+rownames(clus_dt) <- dt$countries
+##NOTE TO ME: either use pf_score, ef_score or the variables that calculate them (currently not using scores)
+```
+The data set is reduced to mostly numerical variables (except country names) for our clustering. Note that the data does not include any data regarding the ranking of the countries because this would not add any valuable information to the data set. Besides the happiness score no scores are included in the data. The reason for that is that the scores of the Human Freedom Index data set are computed using the other variables. If we were to include the data we would use redundant information.
+
+### 4.2
+```{r}
+k <- 10
+X <- scale(clus_dt)
+clust_km <- kmeans(X, k, nstart = 20)
+clust_km$cluster
+```
+
+```{r}
+d <- dist(X)
+hc <- hclust(d)
+plot(hc, hang = 1)
+```
+```{r}
+pheatmap(clus_dt, cluster_rows = T, cluster_cols = F, scale = "column")
+```
 
 
 ## 5. Multidimensional Scaling (Adriana)
