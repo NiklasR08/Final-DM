@@ -483,36 +483,94 @@ From this analysis we have two takeaways:
 
 ## 4. Cluster Analysis (Niklas)
 ```{r include=FALSE}
-library()
+library(factoextra)
+library(cluster)
 ```
 
 During our descriptive analysis we saw some patterns in our data. In the following analysis we will deepen that analysis with a cluster analysis.
 
 ### 4.1 Data Preparation
 ```{r}
+##MAYBE CHANGE THE VARIABLES WE USE FOR THE CLUSTERING
 clus_dt <- dt[, -c(1,2,3,5,6,13,14,15,16,29,30,32,31,33,34,35)]
 rownames(clus_dt) <- dt$countries
 ##NOTE TO ME: either use pf_score, ef_score or the variables that calculate them (currently not using scores)
 ```
 The data set is reduced to mostly numerical variables (except country names) for our clustering. Note that the data does not include any data regarding the ranking of the countries because this would not add any valuable information to the data set. Besides the happiness score no scores are included in the data. The reason for that is that the scores of the Human Freedom Index data set are computed using the other variables. If we were to include the data we would use redundant information.
 
-### 4.2
+### 4.2 k-means clustering
+We will start with k-means clustering. The method aim to partition the points into k groups such that the sum of squares from points to the assigned cluster centers is minimized.
+We will start by visualizing the optimal number of clusters:
 ```{r}
-k <- 10
-X <- scale(clus_dt)
-clust_km <- kmeans(X, k, nstart = 20)
-clust_km$cluster
+clus_dt_scaled <- scale(clus_dt)
+rownames(clus_dt_scaled) = dt$countries
+fviz_nbclust(clus_dt_scaled, kmeans, method = "wss", nstart = 200) +
+  geom_vline(xintercept = 4, linetype = 2)
 ```
+The graph suggests that the optimal number of cluster is probably between 4 and 5. Any number more will probably not add much values to the analysis and any number less still shows room for improvement. 
+We will then proceed with the calculating the number of clusters using k-means.
 
 ```{r}
-d <- dist(X)
-hc <- hclust(d)
-plot(hc, hang = 1)
+k = 4 # number of clusters
+km_dt <- kmeans(clus_dt_scaled, k, nstart = 200)
+print(km_dt)
 ```
+We can see from this analysis which countries are in which cluster.
+We can also calculate the average statistics of each cluster
 ```{r}
-pheatmap(clus_dt, cluster_rows = T, cluster_cols = F, scale = "column")
+aggregate(clus_dt, by=list(cluster=km_dt$cluster), mean)
 ```
 
+
+```{r}
+fviz_cluster(km_dt, data = clus_dt_scaled, 
+             ellipse.type = "euclid",
+             star.plot = T,
+             repel = T,
+             ggtheme = theme_minimal()
+             )
+```
+
+### 4.3 k-medoids clustering
+```{r}
+fviz_nbclust(clus_dt_scaled, kmeans, method = "silhouette", nstart = 200)
+```
+```{r}
+k = 2 # number of clusters
+pam_dt = pam(clus_dt_scaled, k)
+print(pam_dt)
+```
+```{r}
+fviz_cluster(pam_dt, 
+             ellipse.type = "t",
+             repel = T,
+             ggtheme = theme_classic()
+)
+```
+### 4.4 Hierachical Cluster
+```{r}
+dist.eucl = dist(clus_dt_scaled, method = "euclidean")
+hc_dt = hclust(d = dist.eucl, method = "ward.D2")
+fviz_dend(hc_dt, cex = 0.2)
+```
+**Cluster Tree Verification:**
+```{r}
+dt.coph = cophenetic(hc_dt)
+cor(dist.eucl, dt.coph)
+```
+```{r}
+dt.hc2 = hclust(d = dist.eucl, method = "average")
+cor(dist.eucl, cophenetic(dt.hc2))
+```
+As the correlation is higher for the second model, this could be a sign for choosing the second method.
+```{r}
+fviz_dend(hc_dt, k = 2,
+          cex = 0.3,
+          color_labels_by_k = TRUE,
+          rect = T)
+```
+### 4.5 Comparision of Clusters
+In the following part we will look at the different clusters and compare the validity one the clusters.
 
 ## 5. Multidimensional Scaling (Adriana)
 
