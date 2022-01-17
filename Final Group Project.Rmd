@@ -54,9 +54,12 @@ library(tidyverse)
 library(VIM)
 library(mice)
 library(GGally)
+library(factoextra)
+library(FactoMineR)
+library(cluster)
 ```
 
-## 1. Filtering of the Data Set and Imputation of Values
+## 1. Filtering of the Data Set and Imputation of Missing Values
 We will first load the data set and have a first look to better understand the data. Later we will reduce the information of the data set to only relevant columns and in the end we will impute missing values and merge the two data sets into one.
 
 ### 1.1 Loading Data Sets and First Look
@@ -72,7 +75,7 @@ hfi = read.csv("hfi_cc_2018.csv") # Human Freedom Index
 wh
 ```
 
-This data set contains information regarding the happiness of different countries. Next to an index score which ranks each country the data set also has a score happiness score on which the happiness rank is based. Additionally the data set contains columns such as GDP or Health Life Expectancy. All the observations are from 2016. 
+This data set contains information regarding the happiness of different countries. Next to an index which ranks each country, the data set also has a happiness score on which the happiness rank is based. Additionally the data set contains columns such as GDP or Health Life Expectancy. All the observations are from 2016. 
 The columns following the happiness score estimate the extent to which each of six factors – economic production, social support, life expectancy, freedom, absence of corruption, and generosity – contribute to making life evaluations higher in each country than they are in Dystopia, a hypothetical country that has values equal to the world’s lowest national averages for each of the six factors. They have no impact on the total score reported for each country, but they do explain why some countries rank higher than others. 
 GDP per Capita, Family, Life Expectancy, Freedom, Generosity, Trust Government Corruption describe the extent to which these factors contribute in evaluating the happiness in each country. The Dystopia Residual metric actually is the Dystopia Happiness Score(1.85) + the Residual value or the unexplained value for each country
 ([see kaggle](https://www.kaggle.com/unsdsn/world-happiness))
@@ -86,7 +89,7 @@ For a further insights please have a look at the descriptive statistics.
 hfi
 ```
 
-For the second data set we cans see that it contains 1458 observations and 123 variables. The data set contains a huge number of variables. Nonetheless, they are organized hierarchically so we do not need them all. As previously stated, the data set deals with the human freedom index.
+For the second data set we can see that it contains 1458 observations and 123 variables. The data set contains a huge number of variables. Nonetheless, they are organized hierarchically so we do not need them all. As previously stated, the data set deals with the human freedom index.
 
 This variable has been computed considering two factors:personal freedom and economic freedom. We can observe that human freedom (hf) is the simple average of economic freedom (ec) and personal freedom (pf).
 
@@ -140,7 +143,7 @@ We were able to reduce the data set from over 120 different variables to a total
 reduced_hfi16 = reduced_hfi[reduced_hfi$year == 2016, ]
 dim(reduced_hfi16)
 ```
-If we reduce the data set to data from 2016 only we can see that we only have 162 observations compared to 1458 in total if we consider all years. This first reduction of the data set will help us with our analysis by removing redundant information.
+Reducing the observations to the ones of 2016, we are able to combine the obtained results with the first data set.
 
 ### 1.2 Imputation of missing Values
 
@@ -167,7 +170,7 @@ aggr(missing_hfi,
 The plot shows on the one hand how often a variable is missing and on the other hand in which combinations. We can see that for pf_religion less than one percent of the values is missing and for pf_association more than 15% of the values are missing. Additionally we can see on the second plot that only in one case is pf_religion and pf_association missing, in 25 cases only pf_association is missing and in most of the cases (136) no variable is missing!
 
 **Imputation of Missing Variables:** 
-For the imputation of the missing values we will use the mice data set under the following assumptions: We assume that the missing data are missing at random (MAR) which means that the probability that a value is missing depends only on the observed values and can be predicted using them. It imputes data on a variable by variable basis by specifying an imputation model per variable.
+For the imputation of the missing values we will use the mice function under the following assumptions: We assume that the missing data are missing at random (MAR) which means that the probability that a value is missing depends only on the observed values and can be predicted using them. It imputes data on a variable by variable basis by specifying an imputation model per variable.
 
 We will use the predictive mean matching method (pmm) because the missing data of our data set contains purely numeric variables.
 
@@ -180,7 +183,7 @@ summary(imputed_hfi16)
 complete_hfi <- complete(imputed_hfi16, 1)
 ```
 
-The data set now has no more missing values. Remember that for pf_association more than 15% of the values were missing in the before imputing them. To see if there is a big difference between the two models we will now compare the distribution of values between the values of pf_association with imputed values and without imputed values.
+The data set now has no more missing values. Remember that for pf_association more than 15% of the values were missing in the before imputing them. To see if there is a big difference between the two data sets we will now compare the distribution of values between the values of pf_association with imputed values and without imputed values.
 
 ```{r}
 par(mfrow = c(2, 2))
@@ -227,13 +230,13 @@ dt <- fread(out_path)
 In the first step of our analysis we were able to understand the two data sets and do some filtering. This included exploring the variables of the data sets and removing redundant information that we will not need for our further analysis. We saw that some of the variables were missing values. We analyzed the missing values and imputed them with the help of a predictive mean matching method using the mice package. Finally, we merged both data sets into one data set for the further data analysis. The analysis will now continue with some descriptive statistics of the data sets.
 
 ## 2. Descriptive Statistics (Niklas)
-This part includes a quick data preparation where we will choose the relevant variables for our descriptive data analysis. Furthermore, we will perform some univariate and multivariate statistics and look at the correlation between variables. The goal is to derive some first insights into what could drive well being.
+This part includes a quick data preparation where we will choose the relevant variables for our descriptive data analysis. Furthermore, we will perform some univariate and multivariate statistical analysis and look at the correlation between variables. The goal is to derive some first insights into what could drive well being.
 
 ### 2.1 Data Preparation
 
 For the descriptive analysis of the data we will focus just on a part of the data and reduce the data set to the most important data points. 
-From the first data set (World Happiness) we will focus on the following variables: countries, Region, Happiness.Score, Economy..GDP.per.Capita., Family, Health..Life.Expectancy., Freedom, Trust..Government.Corruption., Generosity. The Happiness.Score in the end is the closest score that tells us about the well being of individuals in a country. Additionally, the last six of these scores have the potential to deliver some explanation why the Happiness.Score is high or low (we will call them potential influence variables).
-From the second data set (Human Freedom Index) we will focus on the following three variables: pf_score, ef_score and hf_score. The reason for that is that these variables are already a calculation of the other variables given in our data set. That way we reduce the number ob variables and do not use redundant information.
+From the first data set (World Happiness) we will focus on the following variables: countries, Region, Happiness.Score, Economy..GDP.per.Capita., Family, Health..Life.Expectancy., Freedom, Trust..Government.Corruption., Generosity. The Happiness.Score in the end is the closest score that tells us about the well being of individuals in a country. Additionally, the last six of these scores have the potential to deliver some explanation for the Happiness.Score (we will call them potential influence variables).
+From the second data set (Human Freedom Index) we will focus on the following three variables: pf_score, ef_score and hf_score. The reason for that is that these variables are already a calculation of the other variables given in our data set. So, considering only them, we reduce the number of variables and do not use redundant information.
 ```{r}
 #dropping information that is not needed
 dt_ds <- dt[, c(1,14,2,4,7,8,9,10,11,12,29,31,33)]
@@ -261,7 +264,7 @@ hist(dt_ds$Happiness.Score, main = "Histogram Happiness Score", xlim = c(0, 10),
 ```{r}
 summary(dt_ds$Happiness.Score)
 ```
-From the histogram and the summary statistics we can see that the average and median happiness is around 5,4. The data also does not show any extreme outliers. Given that the score can be anywhere between a 10 (best possible) and a 0 (worst possible) the distribution is not strongly skewed in a direction.
+From the histogram and the summary statistics we can see that the average and median happiness is around 5,4. The data also does not show any outliers. Given that the score can be anywhere between a 10 (best possible) and a 0 (worst possible) the distribution is not strongly skewed.
 
 **Potential Influence Variables:**
 ```{r}
@@ -269,9 +272,9 @@ par(mfrow = c(2, 3))
 hist(dt_ds$Economy..GDP.per.Capita., main = "GDP per Capita", xlab = "Weight of GDP per Capita", xlim = c(0, 2), ylim = c(0, 40))
 hist(dt_ds$Family, main = "Family", xlab = "Weight of Family", xlim = c(0, 2), ylim = c(0, 40))
 hist(dt_ds$Health..Life.Expectancy., main = "Health & Life Expectancy", xlab = "Weight of Health & Life Expectancy", xlim = c(0, 2), ylim = c(0, 40))
-hist(dt_ds$Freedom, main = "Freedom", xlab = "Weight of Freedom", xlim = c(0, 2), ylim = c(0, 40))
-hist(dt_ds$Trust..Government.Corruption., main = "Corruption", xlab = "Weight of Corruption", xlim = c(0, 2), ylim = c(0, 40))
-hist(dt_ds$Generosity, main = "Generosity", xlab = "Weight of Generosity", xlim = c(0, 2), ylim = c(0, 40))
+hist(dt_ds$Freedom, main = "Freedom", xlab = "Weight of Freedom", xlim = c(0, 1), ylim = c(0, 40))
+hist(dt_ds$Trust..Government.Corruption., main = "Corruption", xlab = "Weight of Corruption", xlim = c(0, 1), ylim = c(0, 40))
+hist(dt_ds$Generosity, main = "Generosity", xlab = "Weight of Generosity", xlim = c(0, 1), ylim = c(0, 40))
 
 par(mfrow = c(1,1))
 ```
@@ -279,7 +282,7 @@ par(mfrow = c(1,1))
 ```{r}
 summary(dt_ds[, 5:10])
 ```
-From the boxplots we can see that Family, Life Expectancy and Freedom are left-skewed while Corruption and Generosity are more right-skewed. Given that the score measures the weight that a variable has for the calculation of the happiness index makes a direct interpretation not easy. For example, having a high GDP.per.capita value doesn't necessarily mean having a high GDP, only that GDP contributes a lot to the Happiness Score. On the hand if, for example, a country has a low score on Corruption this does not mean that corruption is low, it only means that Corruption does not contribute a lot to the Happiness Score. (according to the author of the data)
+From the histograms we can see that Family, Life Expectancy and Freedom are left-skewed while Corruption and Generosity are more right-skewed. Given that the score measures the weight that a variable has for the calculation of the happiness index makes a direct interpretation not easy. For example, having a high GDP.per.capita value doesn't necessarily mean having a high GDP, rather that GDP contributes a lot to the Happiness Score. Likewise, for example, a country has a low score on Corruption this does not mean that corruption is low, it only means that Corruption does not contribute a lot to the Happiness Score. (according to the author of the data). Therefore, for that country it is not a relevant characteristic in determinig the well being. 
 If we look at the scale of the histograms we can see that GDP per Capita, Family and Health & Life Expectancy were weighted higher on average, while Freedom, Corruption and Generosity were weighted lower on average.
 
 **Personal Freedom, Economic Freedom and Human Freedom**
@@ -294,7 +297,7 @@ par(mfrow = c(1, 1))
 ```{r}
 summary(dt_ds[,11:13])
 ```
-The distribution of all three graphs is left-skewed. Based on the median we see no big difference between the economic freedom and personal freedom. The distribution on the other hand is slightly different for the two.
+The distribution of all three graphs is left-skewed. Based on the median we see no big difference between the economic freedom and personal freedom scores. The distribution on the other hand is slightly different for the two.
 The human freedom score is the average on the pf_score and ef_score which we can see here (average pf_score + average ef_score = average hf_score).
 
 
@@ -312,17 +315,17 @@ ggpairs(dt_ds,
         ) +
   theme_grey(base_size =  6)
 ```
-In a first step we want to look at the Happiness.Score and the variables because the Happiness.Score is directly related to the well being of a country. In a second step we will look at relationship between the variables that could have an effect on the happiness.
+In a first step we want to look at the Happiness.Score relationships with the other variables as it is directly related to the well being of a country. In a second step we will look at relationship between the variables that could have an effect on the happiness.
 Remember that we saw in our univariate analysis that the following variables had on average a higher weight for the calculation of the Happiness Score: GDP, Family and Health & Life Expectancy while Freedom, Corruption and Generosity were weighted lower on average.
 Now what we can see from the plots is, that for the variables with a higher weight there seems to be a positive correlation between the weight a variable received and the Happiness.Score for that country. On the other hand there seems to be low to no correlation between the Happiness.Score and the other variables that were weighted lower on average. For the variables pf_score, ef_score and hf_score the correlation is somewhere between 0.47 and 0.56. As stated earlier the hf_score is an average between of the ef_score and pf_score so we would only rather only look at the relationship between hf_score and Happiness.Score. 
-Interestingly the data shows no negative correlation at all. From this point of view one could say that a higher happiness score is almost always related to a higher score in another variable. For example a higher score (weight) in GDP per Capita shows a higher Happiness.Score. This relationship however must be further evaluated.
-The following relationships are interesting to us in the first part and we will try to have a closer look at them:
+Interestingly the data shows no negative correlation at all. From this point of view one could say that a higher happiness score is almost always related to a higher score in another variable. For example a higher score (weight) in GDP per Capita shows a higher Happiness.Score. As a consequence we can claim that the more a country consider relevant one of the themes expressed by the variables, the more it is happy. Furthermore, countries that believe GDP, Family and Health & Life Expectancy are important factors, are the happiest in general.
+The following relationships are interesting in the first part and we will try to have a closer look at them:
 -- Happiness.Score and GDP
 -- Happiness.Score and Family
 -- Happiness.Score and Health & Life Expectancy
 -- Happiness.Score and hf_score
 
-For the second part we will now have a look at the relationships between the variables that could affect the Happiness.Score of a country. We can see there is a strong relationship between Health & Life expectancy and GDP we should take a closer look at. Additionally we can see a positive relationship between Family and GDP we should have a closer look at. For the other variables there seems to be little to no correlation and/or do not seem interesting for us at this point for a further analysis.
+For the second part we will have a look at the relationships between the variables that could affect the Happiness.Score of a country. We can see there is a strong relationship between Health & Life expectancy and GDP we should take a closer look at. Additionally we can see a positive relationship between Family and GDP we should have a closer look at. For the other variables there seems to be little to no correlation and/or do not seem interesting for us at this point for a further analysis.
 Interestingly we do not see a strong correlation between the personal freedom score (pf_score) and Freedom and between the economic freedom score (ef_score) and GDP. These two do seem like they should be related so we will also take a closer look at these two variables.
 The following relationships are interesting to us in the second part and we will try to have a closer look at them:
 -- GDP and Family
@@ -331,7 +334,7 @@ The following relationships are interesting to us in the second part and we will
 -- ef_score and GDP
 
 #### 2.3.2 Happiness Score Related Relationships
-In the following we will often use region to try to find a pattern between the different countries because we can often see that the scores are related to a certain region. 
+In the following we will also often use region to try to understand if there are patterns that are valid among states of the same region.
 
 **Happiness.Score and GDP:**
 ```{r}
@@ -351,14 +354,12 @@ ggplot(data = dt_ds, aes(x = Economy..GDP.per.Capita., y = Happiness.Score)) +
   stat_smooth(method = "lm") +
   labs(y = "Happiness Score", x = "Weight of GDP per Capita")
 ```
-Notice, that after splitting the data we can see that there appears to be a pattern for the different regions. For some regions we do not have enough data points to make a statement but for most regions there still seems to be a positive correlation between the happiness score and the weight of the GDP. 
+Notice that, after splitting the data, we can see that it appears to be a pattern for the different regions. For some regions we do not have enough data points to make a statement but for most regions there still seems to be a positive correlation between the happiness score and the weight of the GDP. The only exception is Southern Asia region, where countries happiness score is more or less the same regardless of GDP weight.
 
-Another point we can see is that developed countries (countries from regions such as Western Europe, North America, Australia and New Zealand, Central and Eastern Europe) put on average more weight on GDP when calculating the happiness index than developing countries (countries from other regions)
-```{r}
-dt_ds_c[, mean(Economy..GDP.per.Capita.), by = Development_Status]
-```
 
-We can have a look at the difference between developed countries and developing countries to better understand the difference between the two. Countries from the following regions are developed countries: Western Europe, North America, Australia and New Zealand, Central and Eastern Europe. While countries from these regions are mostly developing countries: Asia, Africa and Latin America and Caribbean.
+
+Furthermore, we can have a look at the difference between developed countries and developing countries. Countries from the following regions are developed countries: Western Europe, North America, Australia and New Zealand, Central and Eastern Europe. While countries from these regions are mostly developing countries: Asia, Africa and Latin America and Caribbean.
+
 ```{r}
 #creating a column to determine which country is from a developed region and which is not
 dt_ds_c <- dt_ds %>%
@@ -375,9 +376,26 @@ ggplot(dt_ds_c, aes(x = Economy..GDP.per.Capita., y = Happiness.Score)) +
   labs(y = "Happiness Score", x = "Weight of GDP per Capita") +
   facet_wrap(~Development_Status) 
 ```
-For both types of countries we can again see a positive relationship between GDP and Happiness.Score. While for developed countries the Happiness.Score is often seems higher we can see that is again depends on the region a country is coming from. The data looks like that  developed countries might be happier on average but this depends strongly from which region you come from. 
-What is interesting on the other hand for both types of countries is that countries with a low Happiness.Score tend to weigh GDP lower than countries with a high Happiness.Score.
+For both types of countries we can again see a positive relationship between GDP and Happiness.Score. While for developed countries the Happiness.Score is often higher we can see that this strongly depends on its region. However, the relationship between GDP importance and Happiness score is further evident in developed countries (it is almost perfectly linear and with a greater slope) rather than in developing countries. Therefore, to give more weight to GDP is expected to increases the happiness score more in developed countries than in developing ones.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%
+Summary (CLEAN IT): even though a positive correlation is recorded in both groups, in developed countries Happiness Score and GDP importance relationship is stronger. In particular it is almost perfectly linear and with a greater slope. As a consequence, trying to explain Happiness with GDP importance, we can claim that: increasing the weight of GDP is going to increase happiness more in developed countries than in developing ones. This pattern is quite reasonable, indeed developed countries have higher GDP, so that valuing it more will make them happier.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Another interesting point is that developed countries (countries from regions such as Western Europe, North America, Australia and New Zealand, Central and Eastern Europe) put on average more weight on GDP when calculating the happiness index than developing countries (countries from other regions). 
+```{r}
+dt_ds_c[, mean(Economy..GDP.per.Capita.), by = Development_Status]
+```
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+I don't know the position where they should be included but they are going to complete the analysis that you carried out so well.
+POSSIBLE EXTENSIONS: 
+1)relationship between HAPPINESS SCORE and region. Richest countries are happier?
+if it is the case, then this could be explained by the fact that GDP weight is positive correlated with happiness
+and Richer countries tends to value more GDP.
+
+2) spend few words on the fact that economical and personal freedom are positive correlated, so that the two kind of freedom seems not to be in contrast with each other 
+%%%%%%%%%%%%
 
 **Happiness.Score and Family:**
 ```{r}
@@ -386,7 +404,7 @@ ggplot(data = dt_ds, aes(x = Family, y = Happiness.Score)) +
   geom_smooth(method = "lm") +
   labs(y = "Happiness Score", x = "Weight of Family", main = "Happiness Score and GDP")
 ```
-Next to the positive correlation we are again able to to see a similar distribution of the regions as for GDP. We can have a closer look at the different regions by themselfes.
+Next to the positive correlation we are again able to to see a similar distribution of the regions as for GDP. We can have a closer look at the different regions by themselves.
 
 
 ```{r}
@@ -396,15 +414,14 @@ ggplot(data = dt_ds, aes(x = Family, y = Happiness.Score)) +
   stat_smooth(method = "lm") +
   labs(y = "Happiness Score", x = "Weight of Family")
 ```
-As you can see we find a similar pattern to the one of GDP. 
-A point that is interesting that also here we see that a high Happiness.Score usually also means that the country puts more weight on Family for the calculation of their Happiness.Score. 
+Also here (apart from Southern Asia) we see that a high Happiness.Score usually also means that the country puts more weight on Family for the calculation of their Happiness.Score. 
 
 **Happiness.Score and Health & Life Expectancy:**
 ```{r}
 ggplot(data = dt_ds, aes(x = Health..Life.Expectancy., y = Happiness.Score)) + 
   geom_point(aes(color = Region)) +
   geom_smooth(method = "lm") +
-  labs(y = "Happiness Score", x = "Weight of Health & Life Expectancy", main = "Happiness Score and GDP")
+  labs(y = "Happiness Score", x = "Weight of Health & Life Expectancy", main = "Happiness Score and Health & Life Expectancy")
 ```
 ```{r}
 ggplot(data = dt_ds, aes(x = Health..Life.Expectancy., y = Happiness.Score)) + 
@@ -413,7 +430,7 @@ ggplot(data = dt_ds, aes(x = Health..Life.Expectancy., y = Happiness.Score)) +
   stat_smooth(method = "lm") +
   labs(y = "Happiness Score", x = "Weight of GDP per Capita")
 ```
-Once again we do not see any exciting deviations from the pattern we presented you earlier for this part as well.
+Once again we do not see any exciting deviations from the pattern we presented you earlier.
 The findings are not surprising and strengthen our first assumption that countries with a high happiness score also put more weight on the potential influencing variables. In other words high scores on variables such as Family, Health & Life Expectancy and GDP usually result in a high score in happiness of the overall country.
 
 **Happiness.Score and hf_score:**
@@ -423,11 +440,11 @@ ggplot(data = dt_ds, aes(x = hf_score, y = Happiness.Score)) +
   geom_smooth(method = "lm") +
   labs(y = "Happiness Score", x = "Human Freedom Score", main = "Happiness Score and GDP")
 ```
-Interestingly we see that the data is a lot more spread for this case than for this case than for the other variables. The correlation as shown earlier is not very high meaning that the graph shows not strong relationship between the human freedom score and the happiness score. As you can see in some cases a low human freedom score is still related to a high happiness score (mostly for countries from Latin America and Caribbean).
+Interestingly we see that the data is a lot more spread for this case than for this case than for the other variables. The correlation as shown earlier is not very high. As you can see in some cases a low human freedom score is still related to a high happiness score (mostly for countries from Latin America and Caribbean).
 
 **Conclusion**
-From this Analysis we can conclude the following two three points:
-1. For some of variables there seems to be little to no correlation compared so the happiness score. In the case for Generosity, for example, the scatter plot shows no interesting behavior on how it influences the happiness score of a country.
+From this Analysis we can conclude the following three points:
+1. For some variables there seems to be little to no correlation with the happiness score. In the case for Generosity, for example, the scatter plot shows no interesting behavior on how it influences the happiness score of a country.
 2. We were able to observe that countries with a high happiness score also put more weight on the potential influencing variables. In other words high scores on variables such as Family, Health & Life Expectancy and GDP usually result in a high score in happiness of the overall country.
 3. The human freedom score and happiness score show a not a high correlation. That means that often a high happiness score is not related to high human freedom score.
 
@@ -441,7 +458,7 @@ ggplot(data = dt_ds, aes(x = Economy..GDP.per.Capita., y = Family,)) +
   geom_smooth(method = "lm") +
   labs(y = "Weight of Family", x = "Weight of GDP per Capita")
 ```
-As we saw in our analysis before, countries with a high happiness score also tend to put a high weight on GDP and Family and vice versa. So it makes sense that these two variables seem to correlate. because if a country has a high happiness score it likely also put a lot of weight on GDP and Family for the calculation of their happiness score. 
+As we saw in our analysis before, countries with a high happiness score also tend to put a high weight on GDP and Family and vice versa. So it makes sense that these two variables are positive correlated. because if a country has a high happiness score it likely also put a lot of weight on GDP and Family.
 
 **GDP and Health & Life Expectancy:**
 ```{r}
@@ -450,7 +467,7 @@ ggplot(data = dt_ds, aes(x = Economy..GDP.per.Capita., y = Health..Life.Expectan
   geom_smooth(method = "lm") +
   labs(y = "Weight of Health & Life Expectancy", x = "Weight of GDP per Capita")
 ```
-The same as for Family holds for this, countries with a high happiness score also tend to put a high weight on GDP and Health & Life Expectancy and vice versa. So it makes sense that these two variables seem to correlate. because if a country has a high happiness score it likely also put a lot of weight on GDP and Health & Life Expectancy for the calculation of their happiness score. 
+The same observed for Family holds for Health & Life Expectancy, countries with a high happiness score also tend to put a high weight on GDP and Health & Life Expectancy and vice versa. So it makes sense that these two variables are positive correlated. If a country has a high happiness score it likely also put a lot of weight on GDP and Health & Life Expectancy for the calculation of their happiness score. 
 
 **Freedom and pf_score:**
 ```{r}
@@ -460,8 +477,8 @@ ggplot(data = dt_ds, aes(x = Freedom, y = pf_score)) +
   labs(y = "personal freedom score", x = "Weight of Freedom")
 ```
 The personal freedom score (pf_score) and the weight that was put to Freedom for the calculation of the happiness score show a positive correlation even though this correlation is not very strong. 
-We can see that countries with a high personal freedom score often also put a lot of weight to freedom when calculating their happiness score but this is not always the case as we can see. This means that a country with a high personal freedom will likely have a higher happiness score and put more weight to it than a person with a low personal freedom and low happiness score.
-
+We can see that countries with a high personal freedom score often also put a lot of weight to freedom but this is not always the case.
+This is quite interesting, indeed we would have expected that countries with a lot of freedom value this factor important for their happiness.
 **GDP and ef_score:**
 ```{r}
 ggplot(data = dt_ds, aes(x = Economy..GDP.per.Capita., y = ef_score)) + 
@@ -469,8 +486,7 @@ ggplot(data = dt_ds, aes(x = Economy..GDP.per.Capita., y = ef_score)) +
   geom_smooth(method = "lm") +
   labs(y = "economic freedom score", x = "Weight of GDP per Capita")
 ```
-Even though the correlation of the two data points might not seem high at first, we can already see here that it is probably influenced by some outliers the data has.
-As reason for the correlation could be that if a country has a higher economic freedom it will likely also put more weight to it when calculating their happiness score and vice versa. So person with more economic freedom will likely be more happy and vice versa.
+The relationship is not very strong, but still clearly positive. Countries with more economical freedom give more importance to GDP regarding their happiness. So a country with more economic freedom will likely be more happy and vice versa, because it is probably associated with an high GDP weight, which is usually associated with higher happiness.
 
 **Conclusion:**
 From this analysis we have two takeaways:
@@ -482,6 +498,33 @@ From this analysis we have two takeaways:
 
 
 ## 4. Cluster Analysis (Niklas)
+
+
+NOTES ON CLUSTER ANALYSIS:
+Assess two kind of cluster analysis considering different variables.
+#First one
+The first one should consider only the columns of the first dataset (and only the weights, not the happiness score or any other variable ). In this way countries will be grouped by their system of values, countries that consider the same things as important will be together.
+After finding the clusters, it could be interesting to determine if a group is generally happier than the others. If that occurs it means that a particular system of value is more likely to lead happiness. On the contrary, if the scores are quite general, then there are different recipes for reaching happiness.
+
+#Second one
+The second one will take into account all the scores of the variables that were used to compute economic and personal freedom (these two will not be included). In this way countries will be grouped by their behavior regarding freedom. Countries in the same cluster will have similar politics regarding economics and social issues, or at least similar results (they record similar freedom scores).
+
+
+#On the elbow method
+The optimal number of clusters should be the point (or close to it) where the total within variance starts decreasing more slowly (the descendant is less steeper). For example, this cleary occur with two nmber of clusters in your example.
+
+#On cluster visualization:
+Be very careful about the reliability of cluster visualization. It strongly depend on the amount of variance explained by the 2 first principal components (in this case it is less than 50% ). Nonetheless dividing the variables like previously mentioned, the visualization should be more accurate.
+
+#On the interpretation fo the dendrogram:
+Remember that the higher is the line that connect two points in the dendrogram, the more different they are. So an optimal number of cluster is the one where all the blocks are connected by very high lines. In your example 2 or 3 seem to be the most valid options.
+
+
+#On using different methods
+The perfect situation would be if both the wss plot (the one where elbow method is use) or the slihouette plot and the dendrogram of the hierarchical clustering suggest to use the same number of clusters. Put emphasis on this if that occurs. Moreover, if there is the possibility (the number of clusters is the same), compare how similar the results are with a table (just use table(labels of cluster1,labels of cluster2), if almost all the instances are divided in the same way (for example, almost all the ones that are in the first group of the first cluster are in the third group of second cluster, and this is recorded also for the other groups) then the reliability of the is higher because with different algorithms we arrived to similar results.
+
+
+
 ```{r include=FALSE}
 library(factoextra)
 library(cluster)
@@ -509,6 +552,7 @@ fviz_nbclust(clus_dt_scaled, kmeans, method = "wss", nstart = 200) +
 ```
 The graph suggests that the optimal number of cluster is probably between 4 and 5. Any number more will probably not add much values to the analysis and any number less still shows room for improvement. 
 We will then proceed with the calculating the number of clusters using k-means.
+
 
 ```{r}
 k = 4 # number of clusters
