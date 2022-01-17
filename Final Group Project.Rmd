@@ -570,7 +570,7 @@ The summary shows us which countries are in which cluster. We are also able to c
 ```{r}
 aggregate(clus1_dt, by=list(cluster=km_dt$cluster), mean)
 ```
-We can see a pattern between the three clusters. Except for Corruption and Generosity the weight drops for each cluster. This means that countries in cluster one have on average the highest weight on all six variables that were used to calculate their Happiness Score. In the second cluster these values are lower than from countries from the first cluster but higher for countries from the third cluster (except for Corruption and Generosity). The third cluster group has the lowest weights on average for most of their variables. This is not the case for Corruption and Generosity, here they score higher than group two but lowter than group one.
+We can see a pattern between the three clusters. Except for Corruption and Generosity the weight drops for each cluster. This means that countries in cluster three have on average the highest weight on all six variables that were used to calculate their Happiness Score. In the first cluster these values are lower than from countries from the third cluster but higher for countries from the second cluster (except for Corruption and Generosity). The second cluster group has the lowest weights on average for most of their variables. This is not the case for Corruption and Generosity, here they score higher than group one but lower than group three
 Knowing that this system of values is influencing their Happiness Score we will later have a look at the average Happiness score cluster and the countries cluster.
 
 ```{r}
@@ -620,9 +620,26 @@ Remember that the higher is the line that connect two points in the dendrogram, 
 ```{r}
 addmargins(table(pam_dt$clustering, km_dt$cluster))
 ```
+We we look at the two clustering methods we choose (k-mediods and k-means) we can see that the clusters we obtained are more or less the same. Both clustering methods result in the same clusters except for a few observations. We will use the k-means clustering for further analysis.
+
+For the next part we will have a look at the different clusters and their Happiness Score. We do not see that there are different recipes for achieving high happiness, but the higher the weight on the attributes the higher is the overall well-being of a country. 
+
+```{r}
+# data preparation
+clus1_dt <- cbind(clus1_dt, Cluster = km_dt$cluster)
+clus1_dt <- cbind(clus1_dt, Region = dt$Region)
+clus1_dt <- cbind(clus1_dt, Happiness.Score = dt$Happiness.Score)
+
+```
+```{r}
+clus1_dt[, mean(Happiness.Score), by = Cluster]
+```
+As one can see, the ranking for the clusters is the same as the ranking for their weight of their attributes. We can therefore see, that the more weight is put on the variables, the higher is their Happiness Score. Remember, that we also saw that countries from rich regions usually have a higher Happiness.Score on average. This means that they probably also have higher values for their variables.
+
 
 
 ### 4.3 Second Cluster Analysis
+For the second Analysis we will follow the same procedure as for the first analysis. For questions regarding the procedure please have a look at the first cluster analysis.
 
 #### 4.3.1 K-means Clustering
 ```{r}
@@ -632,6 +649,9 @@ rownames(clus2_dt_scaled) = dt$countries
 fviz_nbclust(clus2_dt_scaled, kmeans, method = "wss", nstart = 200) +
   geom_vline(xintercept = 2, linetype = 2)
 ```
+We can see from the Graph that the optimal number of cluster lies around 2 - 3. We will choose two for the further analysis.
+
+We then continue with the k-means clustering:
 ```{r}
 k = 2 # number of clusters
 km2_dt <- kmeans(clus2_dt_scaled, k, nstart = 200)
@@ -640,7 +660,7 @@ print(km2_dt)
 ```{r}
 aggregate(clus2_dt, by=list(cluster=km2_dt$cluster), mean)
 ```
-
+As you can see from our clustering we have two groups. Group number two performs better than group one in almost every single variable.
 
 ```{r}
 fviz_cluster(km2_dt, data = clus2_dt_scaled, 
@@ -650,20 +670,21 @@ fviz_cluster(km2_dt, data = clus2_dt_scaled,
              ggtheme = theme_minimal()
              )
 ```
+By looking at the visualization of the clusters we once again see that the dimension of both variables is not very high.
+
 #### 4.3.2 K-Mediods Clustering
 
 ```{r}
 fviz_nbclust(clus2_dt_scaled, kmeans, method = "silhouette", nstart = 200)
 ```
+Using k-mediods we see that we get about the same number of optimal cluster as for the k-means clustering. This strengthens our position to choose two clusters.
+
 ```{r}
 k = 2 # number of clusters
 pam2_dt = pam(clus2_dt_scaled, k)
-print(pam2_dt)
-```
-
-```{r}
 aggregate(clus2_dt, by=list(cluster=pam2_dt$cluster), mean)
 ```
+As we can observe, we have a similar division of the variables for the two groups as we saw it for the k-means algorithm.
 
 #### 4.3.3 Hierachical Clustering
 
@@ -677,16 +698,25 @@ fviz_dend(hc2_dt, k = 2,
           color_labels_by_k = TRUE,
           rect = T)
 ```
+The hierarchical clustering supports our point to choose two clusters.
+
 #### 4.3.4 Explaining and Comparing Clustersg
 ```{r}
 addmargins(table(pam2_dt$clustering, km2_dt$cluster))
 ```
+By comparing the two clustering methods we see that k-means and k-mediods choose the same cluster for almost every observation.
 
-### 4.4 Conclusion
-We have the following conclusions for our clustering analysis
+```{r}
+# data preparation
+clus2_dt <- cbind(clus2_dt, Cluster = km2_dt$cluster)
+clus2_dt <- cbind(clus2_dt, Region = dt$Region)
+clus2_dt <- cbind(clus2_dt, hf_score = dt$hf_score)
 
-
-
+```
+```{r}
+clus2_dt[, mean(hf_score), by = Cluster]
+```
+We are also able to observe that higher scores for the variables that compute personal freedom and economic freedom result in a higher human freedom score and thus higher well being for the countries. 
 
 
 ## 5. Multidimensional Scaling (Adriana)
