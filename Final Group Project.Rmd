@@ -332,6 +332,7 @@ The following relationships are interesting to us in the second part and we will
 -- GDP and Health & Life Expectancy
 -- pf_score and Freedom
 -- ef_score and GDP
+-- ef_score and pf_score
 
 #### 2.3.2 Happiness Score Related Relationships
 In the following we will also often use region to try to understand if there are patterns that are valid among states of the same region.
@@ -376,7 +377,7 @@ ggplot(dt_ds_c, aes(x = Economy..GDP.per.Capita., y = Happiness.Score)) +
   labs(y = "Happiness Score", x = "Weight of GDP per Capita") +
   facet_wrap(~Development_Status) 
 ```
-For both types of countries we can again see a positive relationship between GDP and Happiness.Score. While for developed countries the Happiness.Score is often higher we can see that this strongly depends on its region. However, the relationship between GDP importance and Happiness score is further evident in developed countries (it is almost perfectly linear and with a greater slope) rather than in developing countries. Therefore, to give more weight to GDP is expected to increases the happiness score more in developed countries than in developing ones.
+For both types of countries we can again see a positive relationship between GDP and Happiness.Score. While for developed countries the Happiness.Score is often higher we can see that this strongly depends on its region. However, the relationship between GDP importance and Happiness score is further evident in developed countries (it is almost perfectly linear and with a greater slope) rather than in developing countries. Therefore, giving more weight to GDP is expected to increases the happiness score more in developed countries than in developing ones.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 Summary (CLEAN IT): even though a positive correlation is recorded in both groups, in developed countries Happiness Score and GDP importance relationship is stronger. In particular it is almost perfectly linear and with a greater slope. As a consequence, trying to explain Happiness with GDP importance, we can claim that: increasing the weight of GDP is going to increase happiness more in developed countries than in developing ones. This pattern is quite reasonable, indeed developed countries have higher GDP, so that valuing it more will make them happier.
@@ -387,15 +388,14 @@ Another interesting point is that developed countries (countries from regions su
 dt_ds_c[, mean(Economy..GDP.per.Capita.), by = Development_Status]
 ```
 
-%%%%%%%%%%%%%%%%%%%%%%%%%
-I don't know the position where they should be included but they are going to complete the analysis that you carried out so well.
-POSSIBLE EXTENSIONS: 
-1)relationship between HAPPINESS SCORE and region. Richest countries are happier?
-if it is the case, then this could be explained by the fact that GDP weight is positive correlated with happiness
-and Richer countries tends to value more GDP.
+To extend that analysis we can have a look at relationship between Happiness.Score and region to better understand if richer countries are really happier than poorer countries.
 
-2) spend few words on the fact that economical and personal freedom are positive correlated, so that the two kind of freedom seems not to be in contrast with each other 
-%%%%%%%%%%%%
+```{r}
+ggplot(data = dt_ds, aes(Happiness.Score)) +
+  geom_boxplot() +
+  facet_wrap(~Region)
+```
+As one can see from this box plot, richer countries tend to have a higher happiness score than poorer countries. The plots show that countries from the rich regions like Australia and New Zealand, North America and Western Europe have higher happiness scores that countries that come from poor regions like Sub-Saharan Africa. This could be a reason why the GDP weight is positive correlated with happiness and richer countries tend to values GDP more.
 
 **Happiness.Score and Family:**
 ```{r}
@@ -479,6 +479,7 @@ ggplot(data = dt_ds, aes(x = Freedom, y = pf_score)) +
 The personal freedom score (pf_score) and the weight that was put to Freedom for the calculation of the happiness score show a positive correlation even though this correlation is not very strong. 
 We can see that countries with a high personal freedom score often also put a lot of weight to freedom but this is not always the case.
 This is quite interesting, indeed we would have expected that countries with a lot of freedom value this factor important for their happiness.
+
 **GDP and ef_score:**
 ```{r}
 ggplot(data = dt_ds, aes(x = Economy..GDP.per.Capita., y = ef_score)) + 
@@ -487,6 +488,15 @@ ggplot(data = dt_ds, aes(x = Economy..GDP.per.Capita., y = ef_score)) +
   labs(y = "economic freedom score", x = "Weight of GDP per Capita")
 ```
 The relationship is not very strong, but still clearly positive. Countries with more economical freedom give more importance to GDP regarding their happiness. So a country with more economic freedom will likely be more happy and vice versa, because it is probably associated with an high GDP weight, which is usually associated with higher happiness.
+
+**ef_score and pf_score**
+```{r}
+ggplot(data = dt_ds, aes(x = pf_score, y = ef_score)) + 
+  geom_point(aes(color = Region)) +
+  geom_smooth(method = "lm") +
+  labs(y = "economic freedom score", x = "personal freedom score")
+```
+Additionally, we can see that a higher personal freedom score also results in a higher economic freedom score. This shows that these two are related to each other and do not stand in contrast to one another.
 
 **Conclusion:**
 From this analysis we have two takeaways:
@@ -498,20 +508,6 @@ From this analysis we have two takeaways:
 
 
 ## 4. Cluster Analysis (Niklas)
-
-
-NOTES ON CLUSTER ANALYSIS:
-Assess two kind of cluster analysis considering different variables.
-#First one
-The first one should consider only the columns of the first dataset (and only the weights, not the happiness score or any other variable ). In this way countries will be grouped by their system of values, countries that consider the same things as important will be together.
-After finding the clusters, it could be interesting to determine if a group is generally happier than the others. If that occurs it means that a particular system of value is more likely to lead happiness. On the contrary, if the scores are quite general, then there are different recipes for reaching happiness.
-
-#Second one
-The second one will take into account all the scores of the variables that were used to compute economic and personal freedom (these two will not be included). In this way countries will be grouped by their behavior regarding freedom. Countries in the same cluster will have similar politics regarding economics and social issues, or at least similar results (they record similar freedom scores).
-
-
-#On the elbow method
-The optimal number of clusters should be the point (or close to it) where the total within variance starts decreasing more slowly (the descendant is less steeper). For example, this cleary occur with two nmber of clusters in your example.
 
 #On cluster visualization:
 Be very careful about the reliability of cluster visualization. It strongly depend on the amount of variance explained by the 2 first principal components (in this case it is less than 50% ). Nonetheless dividing the variables like previously mentioned, the visualization should be more accurate.
@@ -530,91 +526,168 @@ library(factoextra)
 library(cluster)
 ```
 
-During our descriptive analysis we saw some patterns in our data. In the following analysis we will deepen that analysis with a cluster analysis.
+During our descriptive analysis we saw some patterns in our data. In the following analysis we will deepen that analysis with a cluster analysis. For that we will perform two different cluster analysis considering different variables.
+
+**First Cluster Analysis**
+The first one should consider only the columns of the first data set (and only the weights, not the happiness score or any other variable ). In this way countries will be grouped by their system of values, countries that consider the same things as important will be together.
+After finding the clusters, it could be interesting to determine if a group is generally happier than the others. If that occurs it means that a particular system of value is more likely to lead happiness. On the contrary, if the scores are quite general, then there are different recipes for reaching happiness.
+
+**Second Cluster Analysis**
+The second one will take into account all the scores of the variables that were used to compute economic and personal freedom (these two will not be included). In this way countries will be grouped by their behavior regarding freedom. Countries in the same cluster will have similar politics regarding economics and social issues, or at least similar results (they record similar freedom scores).
+
 
 ### 4.1 Data Preparation
 ```{r}
-##MAYBE CHANGE THE VARIABLES WE USE FOR THE CLUSTERING
-clus_dt <- dt[, -c(1,2,3,5,6,13,14,15,16,29,30,32,31,33,34,35)]
-rownames(clus_dt) <- dt$countries
-##NOTE TO ME: either use pf_score, ef_score or the variables that calculate them (currently not using scores)
+clus1_dt <- dt[, c(7:12)]
+clus2_dt <- dt[, c(17:28)]
+rownames(clus1_dt) <- dt$countries
+rownames(clust2_dt) <- dt$countries
 ```
-The data set is reduced to mostly numerical variables (except country names) for our clustering. Note that the data does not include any data regarding the ranking of the countries because this would not add any valuable information to the data set. Besides the happiness score no scores are included in the data. The reason for that is that the scores of the Human Freedom Index data set are computed using the other variables. If we were to include the data we would use redundant information.
+**clus1_dt:** This data set only contains the weight of the variables used to calculate their happiness score (such as GDP, Freedom, etc.)
+**clus2_dt:** This data set only contains the variables used to calculate ef_score and pf_score (such as pf_rol, ef_trade, etc.)
 
-### 4.2 k-means clustering
+### 4.2 First Cluster Analysis
+
+#### 4.2.1 K-Means Clustering 
 We will start with k-means clustering. The method aim to partition the points into k groups such that the sum of squares from points to the assigned cluster centers is minimized.
-We will start by visualizing the optimal number of clusters:
+We will start by visualizing the optimal number of clusters using the elbow method:
 ```{r}
-clus_dt_scaled <- scale(clus_dt)
-rownames(clus_dt_scaled) = dt$countries
-fviz_nbclust(clus_dt_scaled, kmeans, method = "wss", nstart = 200) +
-  geom_vline(xintercept = 4, linetype = 2)
+clus1_dt_scaled <- scale(clus1_dt)
+rownames(clus1_dt_scaled) = dt$countries
+fviz_nbclust(clus1_dt_scaled, kmeans, method = "wss", nstart = 200) +
+  geom_vline(xintercept = 3, linetype = 2)
 ```
-The graph suggests that the optimal number of cluster is probably between 4 and 5. Any number more will probably not add much values to the analysis and any number less still shows room for improvement. 
-We will then proceed with the calculating the number of clusters using k-means.
+The optimal number of clusters should be the point (or close to it) where the total within variance starts decreasing more slowly (the descendant is less steeper). We can see that this is the case here for a number of three clusters.
 
-
+Let us do the cluster analysis in the following part.
 ```{r}
-k = 4 # number of clusters
-km_dt <- kmeans(clus_dt_scaled, k, nstart = 200)
+k = 3 # number of clusters
+km_dt <- kmeans(clus1_dt_scaled, k, nstart = 200)
 print(km_dt)
 ```
-We can see from this analysis which countries are in which cluster.
-We can also calculate the average statistics of each cluster
+The summary shows us which countries are in which cluster. We are also able to compute the real average statistics for each country to better understand how each cluster looks like.
+
 ```{r}
-aggregate(clus_dt, by=list(cluster=km_dt$cluster), mean)
+aggregate(clus1_dt, by=list(cluster=km_dt$cluster), mean)
 ```
-
+We can see a pattern between the three clusters. Except for Corruption and Generosity the weight drops for each cluster. This means that countries in cluster one have on average the highest weight on all six variables that were used to calculate their Happiness Score. In the second cluster these values are lower than from countries from the first cluster but higher for countries from the third cluster (except for Corruption and Generosity). The third cluster group has the lowest weights on average for most of their variables. This is not the case for Corruption and Generosity, here they score higher than group two but lowter than group one.
+Knowing that this system of values is influencing their Happiness Score we will later have a look at the average Happiness score cluster and the countries cluster.
 
 ```{r}
-fviz_cluster(km_dt, data = clus_dt_scaled, 
+fviz_cluster(km_dt, data = clus1_dt_scaled, 
              ellipse.type = "euclid",
              star.plot = T,
              repel = T,
              ggtheme = theme_minimal()
              )
 ```
+The visualization is showing the way the countries are clustered. However, we have to be very careful about the reliability of cluster visualization. It strongly depend on the amount of variance explained by the 2 first principal components (in this case it is less than 50%).
 
-### 4.3 k-medoids clustering
+#### 4.2.2 k-medoids clustering
+We can also use k-medoids clustering. Each cluster is represented by a specific point in the cluster, which will be the most centrally located point in the cluster. This algorithm is more robust to noise and outliers. Using another clustering algorithm will be usefull so see if and how much our outcome of the clustering changes with another algorithm.
+
+We will start by looking at the optimal number of clusters again.
 ```{r}
-fviz_nbclust(clus_dt_scaled, kmeans, method = "silhouette", nstart = 200)
+fviz_nbclust(clus1_dt_scaled, kmeans, method = "silhouette", nstart = 200)
 ```
+As you can see, the optimal number of clusters is at 3, the same we got when we used the k-means algorithm. Now it is important for us to compare if the clusters we got a similar to the ones we compute here.
+
 ```{r}
-k = 2 # number of clusters
-pam_dt = pam(clus_dt_scaled, k)
+k = 3 # number of clusters
+pam_dt = pam(clus1_dt_scaled, k)
 print(pam_dt)
 ```
+
 ```{r}
-fviz_cluster(pam_dt, 
-             ellipse.type = "t",
-             repel = T,
-             ggtheme = theme_classic()
-)
+aggregate(clus1_dt, by=list(cluster=pam_dt$cluster), mean)
 ```
-### 4.4 Hierachical Cluster
+Notice, that the arrangement of the clusters in not the same, but if we look at the values of each cluster we get more or less the same picture as we did for our k-means algorithm. For example, we can see that one group (this case number 3) has on average the highest weight for all six categories.
+
+#### 4.2.3 Hierachical Cluster
 ```{r}
-dist.eucl = dist(clus_dt_scaled, method = "euclidean")
-hc_dt = hclust(d = dist.eucl, method = "ward.D2")
-fviz_dend(hc_dt, cex = 0.2)
-```
-**Cluster Tree Verification:**
-```{r}
-dt.coph = cophenetic(hc_dt)
-cor(dist.eucl, dt.coph)
-```
-```{r}
-dt.hc2 = hclust(d = dist.eucl, method = "average")
-cor(dist.eucl, cophenetic(dt.hc2))
-```
-As the correlation is higher for the second model, this could be a sign for choosing the second method.
-```{r}
-fviz_dend(hc_dt, k = 2,
+dist.eucl <- dist(clus1_dt_scaled, method = "euclidean")
+hc_dt <- hclust(dist.eucl)
+
+fviz_dend(hc_dt, k = 3,
           cex = 0.3,
           color_labels_by_k = TRUE,
           rect = T)
 ```
-### 4.5 Comparision of Clusters
-In the following part we will look at the different clusters and compare the validity one the clusters.
+Remember that the higher is the line that connect two points in the dendrogram, the more different they are. So an optimal number of cluster is the one where all the blocks are connected by very high lines. For our dendogram 3 seems to be a valid option. This again strengthens our findings of three different clusters we have in the data.
+
+
+#### 4.2.4 Explaining and Comparing Clusters
+```{r}
+addmargins(table(pam_dt$clustering, km_dt$cluster))
+```
+
+
+### 4.3 Second Cluster Analysis
+
+#### 4.3.1 K-means Clustering
+```{r}
+clus2_dt_scaled <- scale(clus2_dt)
+rownames(clus2_dt_scaled) = dt$countries
+
+fviz_nbclust(clus2_dt_scaled, kmeans, method = "wss", nstart = 200) +
+  geom_vline(xintercept = 2, linetype = 2)
+```
+```{r}
+k = 2 # number of clusters
+km2_dt <- kmeans(clus2_dt_scaled, k, nstart = 200)
+print(km2_dt)
+```
+```{r}
+aggregate(clus2_dt, by=list(cluster=km2_dt$cluster), mean)
+```
+
+
+```{r}
+fviz_cluster(km2_dt, data = clus2_dt_scaled, 
+             ellipse.type = "euclid",
+             star.plot = T,
+             repel = T,
+             ggtheme = theme_minimal()
+             )
+```
+#### 4.3.2 K-Mediods Clustering
+
+```{r}
+fviz_nbclust(clus2_dt_scaled, kmeans, method = "silhouette", nstart = 200)
+```
+```{r}
+k = 2 # number of clusters
+pam2_dt = pam(clus2_dt_scaled, k)
+print(pam2_dt)
+```
+
+```{r}
+aggregate(clus2_dt, by=list(cluster=pam2_dt$cluster), mean)
+```
+
+#### 4.3.3 Hierachical Clustering
+
+```{r}
+dist1.eucl <- dist(clus2_dt_scaled, method = "euclidean")
+hc2_dt <- hclust(dist1.eucl)
+
+
+fviz_dend(hc2_dt, k = 2,
+          cex = 0.3,
+          color_labels_by_k = TRUE,
+          rect = T)
+```
+#### 4.3.4 Explaining and Comparing Clustersg
+```{r}
+addmargins(table(pam2_dt$clustering, km2_dt$cluster))
+```
+
+### 4.4 Conclusion
+We have the following conclusions for our clustering analysis
+
+
+
+
 
 ## 5. Multidimensional Scaling (Adriana)
 
