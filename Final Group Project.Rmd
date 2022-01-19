@@ -541,7 +541,7 @@ The second one will take into account all the scores of the variables that were 
 clus1_dt <- dt[, c(7:12)]
 clus2_dt <- dt[, c(17:28)]
 rownames(clus1_dt) <- dt$countries
-rownames(clust2_dt) <- dt$countries
+rownames(clus2_dt) <- dt$countries
 ```
 **clus1_dt:** This data set only contains the weight of the variables used to calculate their happiness score (such as GDP, Freedom, etc.)
 **clus2_dt:** This data set only contains the variables used to calculate ef_score and pf_score (such as pf_rol, ef_trade, etc.)
@@ -634,6 +634,7 @@ clus1_dt <- cbind(clus1_dt, Happiness.Score = dt$Happiness.Score)
 ```{r}
 clus1_dt[, mean(Happiness.Score), by = Cluster]
 ```
+
 As one can see, the ranking for the clusters is the same as the ranking for their weight of their attributes. We can therefore see, that the more weight is put on the variables, the higher is their Happiness Score. Remember, that we also saw that countries from rich regions usually have a higher Happiness.Score on average. This means that they probably also have higher values for their variables.
 
 
